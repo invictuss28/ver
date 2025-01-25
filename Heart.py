@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -36,29 +35,37 @@ def load_model():
 
 # Streamlit app
 st.title("Heart Disease Prediction")
-st.write("### Predict the likelihood of heart disease using patient information.")
-st.write("Please input the details in the sidebar and view the prediction below.")
+st.write("### Predict the likelihood of heart disease using patient details.")
+st.write("Enter the patient's information below to get a prediction.")
 
-# Sidebar inputs
-st.sidebar.header("Patient Details")
-age = st.sidebar.slider("Age", 20, 80, 50)
-sex = st.sidebar.selectbox("Sex", ["M", "F"])
-cholesterol = st.sidebar.number_input("Cholesterol Level (mg/dL)", 100, 400, 200)
+# Layout for input fields
+with st.form("patient_form"):
+    col1, col2 = st.columns(2)
 
-# Prediction
-try:
-    model, scaler, le = load_model()
-    input_data = pd.DataFrame([[age, sex, cholesterol]], columns=["age", "sex", "cholesterol"])
-    # Encode the sex column in the input data
-    input_data['sex'] = le.transform(input_data['sex'])
-    input_data_scaled = scaler.transform(input_data)
-    prediction = model.predict(input_data_scaled)
+    with col1:
+        age = st.number_input("Age (years)", min_value=20, max_value=80, value=50, step=1)
+        sex = st.radio("Sex", ["Male", "Female"])
 
-    # Display prediction
-    st.write("### Prediction Results")
-    if prediction[0] == 1:
-        st.error("The model predicts that the patient is **at risk** of heart disease.")
-    else:
-        st.success("The model predicts that the patient is **not at risk** of heart disease.")
-except Exception as e:
-    st.error(f"An error occurred: {e}")
+    with col2:
+        cholesterol = st.slider("Cholesterol Level (mg/dL)", min_value=100, max_value=400, value=200, step=10)
+
+    # Submit button
+    submitted = st.form_submit_button("Submit")
+
+if submitted:
+    try:
+        model, scaler, le = load_model()
+        input_data = pd.DataFrame([[age, sex, cholesterol]], columns=["age", "sex", "cholesterol"])
+        # Encode the sex column in the input data
+        input_data['sex'] = le.transform(input_data['sex'].map({'Male': 'M', 'Female': 'F'}))
+        input_data_scaled = scaler.transform(input_data)
+        prediction = model.predict(input_data_scaled)
+
+        # Display prediction
+        st.write("### Prediction Results")
+        if prediction[0] == 1:
+            st.error("The model predicts that the patient is **at risk** of heart disease.")
+        else:
+            st.success("The model predicts that the patient is **not at risk** of heart disease.")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
